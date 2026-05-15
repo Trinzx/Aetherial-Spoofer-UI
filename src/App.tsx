@@ -48,7 +48,7 @@ function cn(...inputs: ClassValue[]) {
 
 // --- Types ---
 
-type View = 'hwid' | 'serial' | 'security' | 'spoofer' | 'flasher' | 'cleaner' | 'trace' | 'stealth' | 'restore' | 'settings';
+type View = 'hwid' | 'serial' | 'account' | 'spoofer' | 'flasher' | 'cleaner' | 'trace' | 'stealth' | 'restore' | 'settings';
 
 interface Product {
   id: string;
@@ -129,6 +129,72 @@ const Input = ({ label, type = 'text', placeholder, value, onChange }: any) => (
 );
 
 // --- Mock Data ---
+
+const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 3500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center p-6 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#7f1d1d_0%,transparent_50%)] opacity-20" />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1 }}
+        className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-800 rounded-xl shadow-[0_0_40px_rgba(220,38,38,0.4)] flex items-center justify-center font-black text-white text-3xl mb-8 relative"
+      >
+        A
+        <motion.div 
+          className="absolute inset-0 border-2 border-red-500 rounded-xl"
+          animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </motion.div>
+
+      <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden relative">
+        <motion.div 
+          className="absolute inset-y-0 left-0 bg-red-600"
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 3, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-[10px] text-zinc-500 font-mono uppercase tracking-[0.4em]"
+        >
+          Initializing Secure Core
+        </motion.p>
+        <div className="flex gap-4 text-[8px] text-zinc-700 font-mono uppercase tracking-widest">
+            <span>Entropy: Verified</span>
+            <span>Kernel: Masked</span>
+            <span>Uplink: Secure</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExitScreen = () => (
+  <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center p-6 overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ duration: 2 }}
+      className="text-center"
+    >
+      <h2 className="text-3xl font-black text-white uppercase tracking-[0.3em] italic mb-4">Protocol Terminated</h2>
+      <p className="text-zinc-600 text-xs uppercase tracking-widest">Clearing encrypted cache and persistent traces...</p>
+    </motion.div>
+  </div>
+);
 
 const MOCK_PRODUCTS: Product[] = [
   { id: '1', name: 'Aether Core', version: 'v2.4.1', status: 'installed', category: 'Engine', description: 'Core optimization and rendering engine enhancement for high-performance visual fidelity.', image: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=800&auto=format&fit=crop', tags: ['Performance', 'RTX'] },
@@ -238,7 +304,30 @@ const HWID_DATA = [
   { id: '5', title: 'Storage Identifier', baseline: 'DRIVE_0_ID_OFFLINE', current: 'SAMSUNG_SSD_980_PRO', status: 'unspoofed' },
 ];
 
-const SerialChangerView = () => {
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 12
+    }
+  }
+};
+
+const SerialChangerView = ({ search = '' }: { search?: string }) => {
   const [spoofing, setSpoofing] = useState<string | null>(null);
 
   const handleSpoof = (target: string) => {
@@ -253,19 +342,25 @@ const SerialChangerView = () => {
     { label: 'Motherboard', icon: Cpu },
     { label: 'CPU IDs', icon: Cpu },
     { label: 'GPU IDs', icon: Cpu },
-  ];
+  ].filter(c => c.label.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-4xl mx-auto animate-in fade-in zoom-in duration-500">
-      <div className="text-center mb-12">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="flex flex-col items-center justify-center min-h-[60vh] max-w-4xl mx-auto"
+    >
+      <motion.div variants={itemVariants} className="text-center mb-12">
         <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">Individual Serial Changer</h2>
         <p className="text-zinc-500 text-sm uppercase tracking-widest font-bold">Select a direct module to bypass hardware mapping</p>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         {components.map((comp) => (
-          <button
+          <motion.button
             key={comp.label}
+            variants={itemVariants}
             onClick={() => handleSpoof(comp.label)}
             disabled={!!spoofing}
             className="group relative bg-zinc-900/40 border border-white/5 rounded-xl p-6 transition-all duration-300 hover:border-red-600/50 hover:bg-red-600/[0.02] flex items-center justify-between overflow-hidden active:scale-95 disabled:opacity-50"
@@ -284,11 +379,11 @@ const SerialChangerView = () => {
             )}
             
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-red-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-          </button>
+          </motion.button>
         ))}
       </div>
 
-      <div className="mt-16 w-full">
+      <motion.div variants={itemVariants} className="mt-16 w-full text-center">
         <button 
           disabled={!!spoofing}
           className="w-full py-6 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-[0.4em] rounded-xl shadow-[0_0_40px_rgba(220,38,38,0.2)] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 relative overflow-hidden group"
@@ -297,8 +392,8 @@ const SerialChangerView = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
         </button>
         <p className="text-center text-[10px] text-zinc-600 uppercase tracking-widest mt-6 font-bold">Authorized session: Local Host Verified</p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
@@ -652,42 +747,85 @@ const FlasherView = () => {
   );
 };
 
-const SecurityView = () => {
+const AccountDashboardView = () => {
   return (
-    <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
-      <div className="mb-10">
-        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Security Protocol</h2>
-        <p className="text-zinc-500 text-xs uppercase tracking-widest mt-1 font-bold">Encapsulated protection and kernel-level masking</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[
-          { label: 'Kernel Masking', status: 'Active', desc: 'Hides system calls from low-level monitors' },
-          { label: 'Process Scrambler', status: 'Optimal', desc: 'Randomizes memory offsets for core engines' },
-          { label: 'Registry Redirect', status: 'Engaged', desc: 'Virtually emulates restricted system keys' },
-          { label: 'File System Sandbox', status: 'Isolated', desc: 'Prevents direct I/O queries to storage' },
-        ].map((item) => (
-          <div key={item.label} className="bg-zinc-900/30 border border-white/5 rounded-xl p-8 hover:border-red-600/20 transition-all group">
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-lg font-black text-white uppercase tracking-tight italic group-hover:text-red-500 transition-colors">{item.label}</h3>
-              <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest rounded">
-                {item.status}
+    <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row gap-8 mb-12">
+        <div className="flex-1 bg-zinc-900/20 border border-white/5 rounded-3xl p-10 flex items-center gap-10">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center p-1">
+              <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden">
+                <User className="w-10 h-10 text-white/20" />
               </div>
             </div>
-            <p className="text-zinc-500 text-xs uppercase font-bold tracking-widest leading-relaxed">
-              {item.desc}
-            </p>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-4 border-zinc-900 rounded-full" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Vesper_Admin</h2>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="px-3 py-1 bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-full">Developer Tier</span>
+              <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest font-mono">UID: 8442-9901-X</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full md:w-96 bg-red-600/5 border border-red-600/10 rounded-3xl p-10 flex flex-col justify-center">
+          <p className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.3em] mb-2">License Key</p>
+          <p className="text-xl font-mono font-black text-white tracking-widest break-all">AETH-CORE-PRO-98X1</p>
+          <div className="mt-4 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Validated & Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: 'Session Time', value: '04:12:44', icon: RefreshCcw, color: 'text-zinc-400' },
+          { label: 'Global Rank', value: '#12', icon: Shield, color: 'text-zinc-400' },
+          { label: 'Successful Spoofs', value: '412', icon: Ghost, color: 'text-red-500' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white/5 border border-white/5 rounded-2xl p-8 group hover:border-white/10 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <stat.icon className={cn("w-5 h-5", stat.color)} />
+              <div className="w-6 h-[1px] bg-white/10 group-hover:bg-red-600/50 transition-all" />
+            </div>
+            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">{stat.label}</p>
+            <p className="text-2xl font-black text-white mt-1 uppercase tracking-tighter">{stat.value}</p>
           </div>
         ))}
       </div>
-      
-      <div className="mt-12 p-8 border border-red-600/20 rounded-2xl bg-red-600/5 text-center">
-        <div className="flex flex-col items-center gap-4">
-          <Shield className="w-8 h-8 text-red-600 animate-pulse" />
-          <div>
-            <p className="text-[10px] text-red-500 uppercase font-black tracking-[0.3em] mb-2">Internal Global Protection</p>
-            <p className="text-zinc-400 text-sm max-w-md mx-auto">Aetherial security layers are automatically calculated based on your hardware profile and target application.</p>
+
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-zinc-900/30 border border-white/5 rounded-3xl p-10">
+          <h3 className="text-lg font-black text-white uppercase tracking-widest mb-8 italic">Recent Logs</h3>
+          <div className="space-y-6">
+            {[
+              { event: 'Kernel Integrity Check', time: '2m ago', status: 'PASS' },
+              { event: 'SMBIOS Override Engaged', time: '14m ago', status: 'OK' },
+              { event: 'Network Layer Isolated', time: '1h ago', status: 'OK' },
+            ].map((log, i) => (
+              <div key={i} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                <div>
+                  <p className="text-xs font-bold text-zinc-300 uppercase tracking-widest">{log.event}</p>
+                  <p className="text-[10px] text-zinc-600 uppercase mt-1">{log.time}</p>
+                </div>
+                <span className="text-[10px] font-black text-emerald-500">{log.status}</span>
+              </div>
+            ))}
           </div>
+        </div>
+
+        <div className="bg-red-950/10 border border-red-900/20 rounded-3xl p-10 flex flex-col justify-center items-center text-center">
+            <Shield className="w-12 h-12 text-red-600 mb-6 animate-pulse" />
+            <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-3">Enterprise Shield Active</h3>
+            <p className="text-zinc-500 text-xs uppercase tracking-widest leading-relaxed max-w-sm">
+                Your account is currently protected by Level 4 Kernel Masking. 
+                Any external process attempts will be automatically scrambled.
+            </p>
+            <button className="mt-8 px-10 py-3 bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all rounded-full">
+              View Security Protocols
+            </button>
         </div>
       </div>
     </div>
@@ -735,12 +873,18 @@ const TraceScannerView = () => {
   );
 };
 
-const DashboardView = () => (
-  <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl mx-auto">
+const DashboardView = ({ search = '' }: { search?: string }) => (
+  <motion.div 
+    variants={containerVariants}
+    initial="hidden"
+    animate="visible"
+    className="flex flex-col gap-4 max-w-4xl mx-auto"
+  >
     <div className="flex flex-col gap-3">
-      {HWID_DATA.map((item) => (
-        <div 
+      {HWID_DATA.filter(item => item.title.toLowerCase().includes(search.toLowerCase()) || item.current.toLowerCase().includes(search.toLowerCase())).map((item) => (
+        <motion.div 
           key={item.id}
+          variants={itemVariants}
           className="group relative bg-[#0C0C0D] border border-white/5 rounded-xl p-5 hover:border-red-600/30 transition-all duration-300 flex items-center justify-between"
         >
           <div className="flex flex-col gap-1">
@@ -763,19 +907,19 @@ const DashboardView = () => (
           )}>
             {item.status === 'spoofed' ? 'Spoofed' : 'Original'}
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
 
-    <div className="flex flex-col sm:flex-row gap-4 mt-8">
+    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 mt-8">
       <button className="flex-1 px-8 py-4 bg-transparent border border-red-600/30 text-red-600 text-xs font-black uppercase tracking-[0.2em] rounded-lg hover:border-red-600 hover:bg-red-600/5 transition-all">
         Capture Baseline
       </button>
       <button className="flex-1 px-8 py-4 bg-red-600 text-white text-xs font-black uppercase tracking-[0.2em] rounded-lg hover:bg-red-700 shadow-xl shadow-red-600/20 transition-all">
         Verify & Refresh Data
       </button>
-    </div>
-  </div>
+    </motion.div>
+  </motion.div>
 );
 
 const ProductsView = () => {
@@ -788,7 +932,7 @@ const ProductsView = () => {
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input 
             type="text" 
-            placeholder="Search modules, tools, assets..." 
+            placeholder="Search serials, HWIDs, traces..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-red-500/50 transition-all font-medium"
@@ -844,17 +988,40 @@ const ProductsView = () => {
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const [currentView, setCurrentView] = useState<View>('hwid');
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    setIsLoading(true);
+  };
+
+  const handleLogout = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setIsAuthenticated(false);
+      setIsExiting(false);
+    }, 2000);
+  };
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  if (isExiting) {
+    return <ExitScreen />;
+  }
+
+  if (isLoading) {
+    return <LoadingScreen onComplete={() => setIsLoading(false)} />;
   }
 
   const navItems = [
     { id: 'hwid', label: 'HWID STATUS', icon: Cpu },
     { id: 'serial', label: 'SERIAL CHANGER', icon: Fingerprint },
-    { id: 'security', label: 'SECURITY', icon: Shield },
+    { id: 'account', label: 'ACCOUNT', icon: Shield },
     { id: 'spoofer', label: 'SPOOFER', icon: Ghost },
     { id: 'flasher', label: 'FLASHER', icon: Database },
     { id: 'cleaner', label: 'CLEANER', icon: Eraser },
@@ -891,7 +1058,9 @@ export default function App() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input 
                   type="text" 
-                  placeholder="Search modules, tools, assets..." 
+                  placeholder="Search serials, HWIDs, traces..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-12 pr-6 text-xs focus:outline-none focus:border-red-500/50 transition-all text-white placeholder:text-zinc-600"
                 />
              </div>
@@ -930,16 +1099,16 @@ export default function App() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
-                  {currentView === 'hwid' && <DashboardView />}
-                  {currentView === 'serial' && <SerialChangerView />}
-                  {currentView === 'security' && <SecurityView />}
+                  {currentView === 'hwid' && <DashboardView search={search} />}
+                  {currentView === 'serial' && <SerialChangerView search={search} />}
+                  {currentView === 'account' && <AccountDashboardView />}
                   {currentView === 'spoofer' && <SpooferView />}
                   {currentView === 'flasher' && <FlasherView />}
                   {currentView === 'restore' && <RestoreView />}
                   {currentView === 'stealth' && <StealthView />}
                   {currentView === 'cleaner' && <CleanerView />}
                   {currentView === 'trace' && <TraceScannerView />}
-                  {(currentView !== 'hwid' && currentView !== 'serial' && currentView !== 'security' && currentView !== 'spoofer' && currentView !== 'flasher' && currentView !== 'restore' && currentView !== 'stealth' && currentView !== 'cleaner' && currentView !== 'trace' && currentView !== 'settings') && (
+                  {(currentView !== 'hwid' && currentView !== 'serial' && currentView !== 'account' && currentView !== 'spoofer' && currentView !== 'flasher' && currentView !== 'restore' && currentView !== 'stealth' && currentView !== 'cleaner' && currentView !== 'trace' && currentView !== 'settings') && (
                     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-12 bg-white/5 rounded-3xl border border-white/5">
                       <div className="w-20 h-20 bg-red-600/10 rounded-2xl flex items-center justify-center mb-8 border border-red-500/10">
                         <Settings className="w-8 h-8 text-red-500 animate-spin-slow" />
@@ -958,18 +1127,25 @@ export default function App() {
 
         {/* Floating Bottom Taskbar */}
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-          <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div className="bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl p-2 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setCurrentView(item.id as View)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative group",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative group z-10",
                   currentView === item.id 
-                    ? "bg-red-600/20 text-white shadow-[inset_0_0_15px_rgba(220,38,38,0.1)]" 
-                    : "text-zinc-500 hover:text-white"
+                    ? "text-white" 
+                    : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
+                {currentView === item.id && (
+                  <motion.div 
+                    layoutId="active-highlight"
+                    className="absolute inset-0 bg-red-600/20 rounded-xl border border-red-600/20 z-[-1]"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
                 <item.icon className={cn(
                   "w-4 h-4 transition-all duration-300",
                   currentView === item.id ? "text-red-500 scale-110 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" : "group-hover:text-red-400"
@@ -984,7 +1160,7 @@ export default function App() {
             ))}
             <div className="w-[1px] h-6 bg-white/10 mx-2" />
             <button 
-              onClick={() => setIsAuthenticated(false)}
+              onClick={handleLogout}
               className="p-3 text-zinc-500 hover:text-red-500 transition-colors"
               title="Terminate Protocol"
             >
